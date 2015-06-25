@@ -24,19 +24,21 @@ def upload_file():
     if request.method == 'POST':
         file = request.files['file']
         text = request.form['url']
+        newversion = request.form.getlist('newversion')
         print text
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(os.path.dirname(os.path.abspath(__file__)) + '/static/', filename))
             return redirect(url_for('uploaded_file',
-                                    filename=filename, text=text))
+                                    filename=filename, text=text, newversion=newversion))
     return render_template("index.html", text='http://www.coronelbicaco.rs.gov.br')
 
 from flask import send_from_directory
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    thum = qrgenerator.create_qrcode(request.args.get('text'), os.path.dirname(os.path.abspath(__file__)) + '/static/'+filename)
+    thum = qrgenerator.create_qrcode(request.args.get('text'), os.path.dirname(os.path.abspath(__file__)) + '/static/'+filename,
+                                      request.args.get('newversion'))
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)) + '/static/',
                                filename+'qr.jpg')
 

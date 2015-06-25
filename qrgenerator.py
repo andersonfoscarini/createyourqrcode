@@ -4,7 +4,7 @@ from qrcode import *
 from PIL import Image, ImageOps
 
 
-def create_qrcode(text, image_path):
+def create_qrcode(text, image_path, newversion):
     qr = QRCode(
         version=4,
         error_correction=ERROR_CORRECT_L,
@@ -30,6 +30,21 @@ def create_qrcode(text, image_path):
         thum = ImageOps.fit(imagef,im.size)
 
     #thum.save('thum.png')
+    if newversion is not None:
+        thum1 = thum.filter(ImageFilter.FIND_EDGES)
+
+        thum1 = thum1.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        thum1 = thum1.filter(ImageFilter.EDGE_ENHANCE_MORE)
+        thum2 = thum1.filter(ImageFilter.GaussianBlur)
+        thum2 = thum2.filter(ImageFilter.GaussianBlur)
+
+        thum2 = ImageOps.autocontrast(thum2)
+        thum2 = ImageOps.equalize(thum2)
+        thum2 = thum2.filter(ImageFilter.SHARPEN)
+        thum2 = thum2.filter(ImageFilter.SHARPEN)
+        for i in range(0,im.size[0]):
+            for j in range(0, im.size[1]):
+                thum2.putpixel((i,j), thum2.getpixel((i,j))+70)
     for i in range(0, im.size[0]-1):
         for j in range(0, im.size[1]-1):
             cc = thum.getpixel((i,j)) #// current color
@@ -62,6 +77,13 @@ def create_qrcode(text, image_path):
         for j in range(234, 279):
             thum.putpixel((i,j), im.getpixel((i,j)))
 
+    for i in range(81-9,81):
+        for j in range(0,im.size[1]):
+            thum.putpixel((i,j), im.getpixel((i,j)))
+    for i in range(0,im.size[0]):
+        for j in range(81-9,81):
+            thum.putpixel((i,j), im.getpixel((i,j)))
+
 
     for i in range(0,im.size[0]):
         for j in range(0, 18):
@@ -83,17 +105,25 @@ def create_qrcode(text, image_path):
             if x < 81 and y < 81 or x>im.size[0]-81 and y < 81 or x<81 and y>im.size[1]-81 or x>233 and x<=279 and y>233 and y <=279:
                 pass
             else:
-                thum.putpixel((x,y), im.getpixel((x,y)))
-                thum.putpixel((x+1,y), im.getpixel((x+1,y)))
-                thum.putpixel((x+2,y), im.getpixel((x+2,y)))
-                thum.putpixel((x,y+1), im.getpixel((x,y+1)))
-                thum.putpixel((x,y+2), im.getpixel((x,y+2)))
-                thum.putpixel((x+1,y+1), im.getpixel((x+1,y+1)))
-                thum.putpixel((x+1,y+2), im.getpixel((x+1,y+2)))
-                thum.putpixel((x+2,y+1), im.getpixel((x+2,y+1)))
-                thum.putpixel((x+2,y+2), im.getpixel((x+2,y+2)))
+                if newversion is not None:
+                    for l in range(-3,6):#submodulos todos
+                        for m in range(-3,6):
+                            original = thum.getpixel((x+l, y+m))
+                            from_qrcode = im.getpixel((x+l, y+m))
+                            threshold = float(thum2.getpixel((x+l,y+m)))/255.0
+                            newvalue = original*threshold + (1-threshold)*from_qrcode
+                            thum.putpixel((x+l, y+m), newvalue)
+                for l in range(0,3):#submodulo central
+                    for m in range(0,3):
+                        thum.putpixel((x+l,y+m), im.getpixel((x+l, y+m)))
             y+=9
         x+=9
+
+    if newversion is not None:
+        for i in range(0,im.size[0]):
+            for j in range(0, im.size[1]):
+                if thum.getpixel((i,j)) < 180:
+                    thum.putpixel((i,j), 0)
     #thum.save(image_path+'qr.jpg')
     return thum
    # thum.save(text.sub('http://www','').gsub('.','_')+'.png')
